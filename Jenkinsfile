@@ -1,29 +1,34 @@
 pipeline {
     agent any 
     environment {
-    DOCKERHUB_CREDENTIALS = credentials('amonkincloud-dockerhub')
+        DOCKERHUB_CREDENTIALS = credentials('skillfullsky')
     }
     stages { 
 
         stage('Build docker image') {
             steps {  
-                sh 'docker build -t ylmt/flaskapp:$BUILD_NUMBER .'
+                sh 'docker build -t skillfullsky/flaskapp:$BUILD_NUMBER .'
             }
         }
-        stage('login to dockerhub') {
+        
+        stage('Login to DockerHub') {
             steps{
-                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                sh 'echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login -u "$DOCKERHUB_CREDENTIALS_USR" --password-stdin'
             }
         }
-        stage('push image') {
+        
+        stage('Push Image') {
             steps{
-                sh 'docker push ylmt/flaskapp:$BUILD_NUMBER'
+                sh 'docker push skillfullsky/flaskapp:$BUILD_NUMBER'
             }
         }
-}
-post {
+    }
+
+    post {
         always {
-            sh 'docker logout'
+            script {
+                sh 'docker logout'
+            }
         }
     }
 }
