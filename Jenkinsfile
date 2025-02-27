@@ -1,47 +1,59 @@
 pipeline {
-    agent any 
+    agent any
+
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('skillfullsky')
+        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials') // Jenkins credentials ID
+        IMAGE_NAME = "skillfullsky/flask-app"
+        DOCKER_TAG = "latest"
     }
-    stages { 
-        stage('Build docker image') {
-            steps {  
-                sh '''
-                set -x
-                docker build -t skillfullsky/flask-app:$BUILD_NUMBER .
-                '''
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git 'https://github.com/your-github-username/your-repo.git'  // Replace with your actual GitHub repo URL
             }
         }
-        
-        stage('Login to DockerHub') {
-            steps{
-                sh '''
-                set -x
-                echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login -u "$DOCKERHUB_CREDENTIALS_USR" --password-stdin
-                '''
+
+        stage('Login to Docker Hub') {
+            steps {
+                script {
+                    sh """
+                    echo '${DOCKER_HUB_CREDENTIALS_PSW}' | docker login -u '${DOCKER_HUB_CREDENTIALS_USR}' --password-stdin
+                    """
+                }
             }
         }
-        
-        stage('Push Image') {
-            steps{
-                sh '''
-                set -x
-                docker push skillfullsky/flaskapp:$BUILD_NUMBER
-                '''
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh """
+                    docker build -t ${IMAGE_NAME}:${DOCKER_TAG} .
+                    """
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    sh """
+                    docker push ${IMAGE_NAME}:${DOCKER_TAG}
+                    """
+                }
+            }
+        }
+
+        stage('Logout from Docker Hub') {
+            steps {
+                sh "docker logout"
             }
         }
     }
 
     post {
         always {
-            script {
-                node {
-                    sh '''
-                    set -x
-                    docker logout || echo "Docker logout failed, but continuing..."
-                    '''
-                }
-            }
+            sh "docker system prune -f"
         }
     }
 }
