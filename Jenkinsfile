@@ -2,24 +2,14 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials') // Jenkins credentials ID
-        IMAGE_NAME = "skillfullsky/flask-app"
-        DOCKER_TAG = "latest"
+        DOCKER_IMAGE = "skillfullsky/flask-app:latest"
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                git 'https://github.com/your-github-username/your-repo.git'  // Replace with your actual GitHub repo URL
-            }
-        }
-
-        stage('Login to Docker Hub') {
+        stage('Clone Repository') {
             steps {
                 script {
-                    sh """
-                    echo '${DOCKER_HUB_CREDENTIALS_PSW}' | docker login -u '${DOCKER_HUB_CREDENTIALS_USR}' --password-stdin
-                    """
+                    checkout scm
                 }
             }
         }
@@ -27,33 +17,45 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh """
-                    docker build -t ${IMAGE_NAME}:${DOCKER_TAG} .
-                    """
+                    sh 'docker build -t ${DOCKER_IMAGE} .'
                 }
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Login to Docker Hub') {
             steps {
                 script {
-                    sh """
-                    docker push ${IMAGE_NAME}:${DOCKER_TAG}
-                    """
+                    withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_CREDENTIALS', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+                    }
                 }
             }
         }
 
-        stage('Logout from Docker Hub') {
+        stage('Push Docker Image to Docker Hub') {
             steps {
-                sh "docker logout"
+                script {
+                    sh 'docker push ${DOCKER_IMAGE}'
+                }
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                script {
+                    sh 'docker rmi ${DOCKER_IMAGE} || true'
+                    sh 'docker logout'
+                }
             }
         }
     }
 
     post {
-        always {
-            sh "docker system prune -f"
+        success {
+            echo '✅ Build and Push Successful!'
+        }
+        failure {
+            echo '❌ Build or Push Failed!'
         }
     }
 }
