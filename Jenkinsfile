@@ -4,7 +4,6 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('skillfullsky')
     }
     stages { 
-
         stage('Build docker image') {
             steps {  
                 sh 'docker build -t skillfullsky/flaskapp:$BUILD_NUMBER .'
@@ -27,7 +26,9 @@ pipeline {
     post {
         always {
             script {
-                sh 'docker logout'
+                node {  // Ensure workspace context is available
+                    sh 'docker logout'
+                }
             }
         }
     }
