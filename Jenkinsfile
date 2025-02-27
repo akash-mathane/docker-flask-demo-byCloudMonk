@@ -6,19 +6,28 @@ pipeline {
     stages { 
         stage('Build docker image') {
             steps {  
-                sh 'docker build -t skillfullsky/flaskapp:$BUILD_NUMBER .'
+                sh '''
+                set -x
+                docker build -t skillfullsky/flaskapp:$BUILD_NUMBER .
+                '''
             }
         }
         
         stage('Login to DockerHub') {
             steps{
-                sh 'echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login -u "$DOCKERHUB_CREDENTIALS_USR" --password-stdin'
+                sh '''
+                set -x
+                echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login -u "$DOCKERHUB_CREDENTIALS_USR" --password-stdin
+                '''
             }
         }
         
         stage('Push Image') {
             steps{
-                sh 'docker push skillfullsky/flaskapp:$BUILD_NUMBER'
+                sh '''
+                set -x
+                docker push skillfullsky/flaskapp:$BUILD_NUMBER
+                '''
             }
         }
     }
@@ -26,8 +35,11 @@ pipeline {
     post {
         always {
             script {
-                node {  // Ensure workspace context is available
-                    sh 'docker logout'
+                node {
+                    sh '''
+                    set -x
+                    docker logout || echo "Docker logout failed, but continuing..."
+                    '''
                 }
             }
         }
