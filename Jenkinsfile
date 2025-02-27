@@ -8,7 +8,7 @@ pipeline {
             steps {  
                 sh '''
                 set -x
-                docker build -t skillfullsky/flaskapp:$BUILD_NUMBER .
+                docker build -t skillfullsky/flask-app:$BUILD_NUMBER .
                 '''
             }
         }
